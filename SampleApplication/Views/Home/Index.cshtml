@@ -76,6 +76,13 @@
                 </div>
             </div>
                  <div class="col-7 vh-100">
+                <nav aria-label="Question Paper Pages">
+                    <ul class="pagination my-4" id="pages">
+                        <li class="page-item disabled">
+                            <span class="page-link">Pages</span>
+                        </li>
+                    </ul>
+                </nav>
                     <canvas id="pdf-canvas"></canvas>
                  </div>
                  <div class="col-3">
@@ -111,7 +118,7 @@
             let marks =  [];
             let marksCordinated = [];
             let drawCordinated = [];
-
+            
 
             /*
 
@@ -120,8 +127,11 @@
                 3. Draw Wrong
 
             */
+           let pdfDoc = null;
             let drawType = 0 ;
             let currentPageNumber = 1;
+            let maxPages = 1;
+
             //Set up PDF
             const url = '@Model.FilePath';
             const canvas = document.getElementById('pdf-canvas');
@@ -130,8 +140,16 @@
 
 
             pdfjsLib.getDocument(url).promise.then((pdf) => {
-     
-            pdf.getPage(1).then((page) => {
+            pdfDoc = pdf;
+            maxPages = pdf.numPages;
+            createPages(maxPages);
+            renderPage(1);
+        });
+
+
+        function renderPage(num) {
+            currentPageNumber = num;
+            pdfDoc.getPage(num).then((page) => {
                 const viewport = page.getViewport({ scale: 1 });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
@@ -141,11 +159,46 @@
                     viewport: viewport,
                 };
 
-                page.render(renderContext).then(() => {
-                    // PDF is now rendered on the canvas
-                });
+               page.render(renderContext).promise.then(()=>{
+                renderMarks();
+               });
+               
             });
-        });
+        }
+
+        function renderMarks(){
+            let drawMarks = drawCordinated.filter(d => d.page == currentPageNumber);
+            for(var d of drawMarks)
+            {
+                if(d.type == "right")
+                {
+                    drawTickMark(d.x,d.y,20);
+                }
+                else
+                {
+                    drawXMark(d.x,d.y,20);
+                }
+            }
+        }
+
+        function createPages(max){
+            let element = document.getElementById("pages");
+
+            for(var i=1;i<=max;i++)
+            {
+                let p = document.createElement("li");
+                p.setAttribute("class", "page-item");
+                p.setAttribute("data-page",i);
+                p.innerHTML = `<div class='page-link'>${i}</div>`;
+                p.addEventListener("click",()=> {
+                    console.log("Change Page to " + $(p).attr("data-page"));
+                    renderPage(Number($(p).attr("data-page")));
+                });
+                element.appendChild(p);
+
+
+            }
+        }
 
         $(document).ready(() => {
 
@@ -217,12 +270,14 @@
                 {
                     console.debug("Correct Answer");
                     drawTickMark(x,y,20);
+                    drawCordinated.push({x,y,type : "right",page : currentPageNumber});
                 }
 
                 if(drawType == 3)
                 {
                     console.debug("Wrong Answer");
                     drawXMark(x,y,20);
+                    drawCordinated.push({ x, y, type: "wrong", page: currentPageNumber });
                 }
             }
             else
