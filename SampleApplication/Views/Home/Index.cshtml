@@ -97,7 +97,8 @@
                         <div class="row mt-4">
                             <div class="col-2"><button type="button" class="btn btn-warning btn-sm w-100 btn-question" data-max-marks="@q.MaxMarks" data-question-id="@q.QuestionNumber">@q.QuestionNumber</button></div>
                             <div class="col-4"><strong><input type="text" class="form-control form-control-sm form-marks text-center" data-question-id="@q.QuestionNumber" /></strong></div>
-                            <div class="col-6 text-center"><strong>@q.MaxMarks</strong></div>
+                            <div class="col-4 text-center"><strong>@q.MaxMarks</strong></div>
+                            <div class="col-2"><button class="btn btn-light btn-sm" onclick="resetPageMarking(@q.QuestionNumber)">Reset</button></div>
                         </div>
                     }
                     </div>
@@ -150,7 +151,7 @@
         function renderPage(num) {
             currentPageNumber = num;
             pdfDoc.getPage(num).then((page) => {
-                const viewport = page.getViewport({ scale: 1 });
+                const viewport = page.getViewport({ scale: 2 });
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
 
@@ -198,6 +199,13 @@
 
 
             }
+        }
+
+        function resetPageMarking(qno)
+        {
+            drawCordinated = drawCordinated.filter(d => d.questionNumber != qno);
+            selectedQuestionNumber = 0;
+            renderPage(currentPageNumber);
         }
 
         $(document).ready(() => {
@@ -270,14 +278,14 @@
                 {
                     console.debug("Correct Answer");
                     drawTickMark(x,y,20);
-                    drawCordinated.push({x,y,type : "right",page : currentPageNumber});
+                    drawCordinated.push({x,y,type : "right",page : currentPageNumber,questionNumber : selectedQuestionNumber});
                 }
 
                 if(drawType == 3)
                 {
                     console.debug("Wrong Answer");
                     drawXMark(x,y,20);
-                    drawCordinated.push({ x, y, type: "wrong", page: currentPageNumber });
+                    drawCordinated.push({ x, y, type: "wrong", page: currentPageNumber, questionNumber: selectedQuestionNumber });
                 }
             }
             else
